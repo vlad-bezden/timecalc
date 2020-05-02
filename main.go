@@ -1,12 +1,17 @@
+// Package main calculates time for user provided distance and speed
 package main
 
 import (
 	"errors"
 	"fmt"
-	"math"
+	"io"
 	"os"
 	"strconv"
-	"strings"
+)
+
+const (
+	minute = 60          // minutes in an hour
+	second = minute * 60 // seconds in an hour
 )
 
 var errInvalidArguments = errors.New("Invalid arguments")
@@ -14,44 +19,22 @@ var errReadingInput = errors.New("Error reading input")
 
 func main() {
 	for {
-		miles := getInput("Enter Miles: ")
-		speed := getInput("Enter Speed (m/h): ")
+		miles := getInput("Enter distance (miles): ")
+		speed := getInput("Enter speed (m/h): ")
 
 		calcResult(miles, speed)
-
-		isContinue := askForContinue()
-
-		if !isContinue {
-			fmt.Println("Good bye!")
-			break
-		}
 	}
 }
 
+// calcResult calculate hours, minutes, and seconds and print them out
 func calcResult(miles float64, speed float64) {
-	// time in seconds
-	time := miles / speed * 60 * 60
-	hours := math.Floor(time / 60 / 60)
-	minutes := math.Floor(time / 60)
-	seconds := int(time) % 60
+	// time in hours
+	time := miles / speed
+	hours := int(time)
+	minutes := int(time*minute) % 60
+	seconds := int(time*second) % 60
 
-	fmt.Printf("%v:%v:%v\n\n", hours, minutes, seconds)
-}
-
-func askForContinue() bool {
-	var response string
-	fmt.Print("Would you like to calculate another time? (Y/y) ")
-
-	_, err := fmt.Scanln(&response)
-	if err != nil {
-		printError(errReadingInput)
-	}
-	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
-
-	if containsString(okayResponses, response) {
-		return true
-	}
-	return false
+	fmt.Printf("Time: %02d:%02d:%02d\n\n", hours, minutes, seconds)
 }
 
 // containsString returns true if slice contains element
@@ -70,19 +53,19 @@ func printError(err error) {
 	os.Exit(1)
 }
 
+// getInput prompts user for speed or milage input validate it and returns value
 func getInput(prompt string) float64 {
-	fmt.Print(prompt)
 	var input string
+	fmt.Print(prompt)
 	_, err := fmt.Scanln(&input)
 	if err != nil {
+		if err == io.EOF {
+			fmt.Println("\n\nExiting...")
+			os.Exit(0)
+		}
+		fmt.Println(err)
 		printError(errReadingInput)
 	}
-	return inputToValue(input)
-}
-
-func inputToValue(input string) float64 {
-	// trim the newline charecter
-	input = strings.TrimSpace(input)
 	// convert string to float64 value
 	value, err := strconv.ParseFloat(input, 64)
 	if err != nil {
